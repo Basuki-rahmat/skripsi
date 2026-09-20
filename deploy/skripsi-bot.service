@@ -1,0 +1,21 @@
+[Unit]
+Description=SkripsiMentor Telegram Bot (Frida)
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+# Ganti user & path sesuai server Anda
+User=skripsi
+WorkingDirectory=/var/www/skripsi
+Environment=NODE_ENV=production
+# PENTING: bot memakai long-polling Telegram — WAJIB hanya satu instance.
+# Jangan jalankan bersamaan dengan pm2/lokal memakai token yang sama.
+ExecStart=/usr/bin/npx tsx src/bot/run.ts
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/skripsi/bot.log
+StandardError=append:/var/log/skripsi/bot-err.log
+
+[Install]
+WantedBy=multi-user.target

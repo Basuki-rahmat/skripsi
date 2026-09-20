@@ -1,0 +1,24 @@
+[Unit]
+Description=SkripsiMentor Web (Next.js)
+After=network.target mariadb.service
+Wants=mariadb.service
+
+[Service]
+Type=simple
+# Ganti user & path sesuai server Anda
+User=skripsi
+WorkingDirectory=/var/www/skripsi
+# Opsional (belt & suspenders): Next.js sudah membaca .env sendiri.
+# Catatan: EnvironmentFile menuntut format KEY=value tanpa kutip; jika .env
+# memakai kutip, biarkan baris ini dinonaktifkan.
+#EnvironmentFile=/var/www/skripsi/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+ExecStart=/usr/bin/npm run start
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/skripsi/web.log
+StandardError=append:/var/log/skripsi/web-err.log
+
+[Install]
+WantedBy=multi-user.target

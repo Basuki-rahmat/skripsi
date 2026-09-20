@@ -6,6 +6,7 @@
     "dev": "concurrently -k -n next,bot \"next dev\" \"tsx src/bot/run.ts\"",
     "dev:next": "next dev",
     "dev:bot": "tsx src/bot/run.ts",
+    "start:bot": "tsx src/bot/run.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# runtime logs (next dev + telegram bot)
+# runtime logs (next dev + telegram bot + pm2)
 *.log
+logs/
 
 # env files (can opt-in for committing if needed)
 .env*
