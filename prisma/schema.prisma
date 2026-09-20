@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  MAHASISWA
+  MENTOR
+  ADMIN
+}
+
+enum PackageType {
+  BIMBINGAN
+  PEMBUATAN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  PROCESSING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  EXPIRED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  MIDTRANS
+  TRANSFER_MANUAL
+}
+
+enum ThesisStageStatus {
+  BELUM_DIMULAI
+  DIKERJAKAN
+  REVISI
+  SELESAI
+}
+
+model User {
+  id              String          @id @default(cuid())
+  name            String
+  email           String          @unique
+  password        String
+  role            Role            @default(MAHASISWA)
+  phone           String?
+  whatsapp        String?
+  telegramChatId  String?         @unique
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  orders          Order[]
+  testimonials    Testimonial[]
+  mentoredProgress Progress[]     @relation("Mentor")
+  mentoredOrders  Order[]         @relation("MentorOrder")
+  thesisStageUpdates ThesisStage[] @relation("ThesisStageUpdates")
+}
+
+model Package {
+  id          String      @id @default(cuid())
+  name        String
+  type        PackageType @default(BIMBINGAN)
+  description String? @db.Text
+  price       Int
+  features    Json
+  duration    String?
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  orders      Order[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  code          String      @unique
+  user          User        @relation(fields: [userId], references: [id])
+  userId        String
+  package       Package     @relation(fields: [packageId], references: [id])
+  packageId     String
+  type          PackageType
+  detail        Json?
+  status        OrderStatus @default(PENDING)
+  snapToken     String?
+  paymentLink   String?
+  note          String? @db.Text
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  payments      Payment[]
+  progresses    Progress[]
+  mentor        User?     @relation("MentorOrder", fields: [mentorId], references: [id])
+  mentorId      String?
+  thesisStages  ThesisStage[]
+}
+
+model Payment {
+  id               String        @id @default(cuid())
+  order            Order         @relation(fields: [orderId], references: [id])
+  orderId          String
+  method           PaymentMethod @default(MIDTRANS)
+  status           PaymentStatus @default(PENDING)
+  amount           Int
+  transactionId    String?
+  proofUrl         String?
+  midtransResponse Json?
+  paidAt           DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Testimonial {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  content   String @db.Text
+  rating    Int      @default(5)
+  isApproved Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  title       String
+  slug        String    @unique
+  excerpt     String?
+  content     String @db.LongText
+  image       String?
+  published   Boolean   @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Progress {
+  id        String   @id @default(cuid())
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String
+  mentor    User     @relation("Mentor", fields: [mentorId], references: [id])
+  mentorId  String
+  title     String
+  note      String? @db.Text
+  percent   Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model ThesisStage {
+  id          String            @id @default(cuid())
+  order       Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId     String
+  key         String
+  title       String
+  status      ThesisStageStatus @default(BELUM_DIMULAI)
+  note        String?           @db.Text
+  updatedById String?
+  updatedBy   User?             @relation("ThesisStageUpdates", fields: [updatedById], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([orderId, key])
+  @@index([orderId])
+}

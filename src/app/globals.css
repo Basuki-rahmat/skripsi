@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui,
+    sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.container-page {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 font-semibold text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 font-semibold text-slate-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 hover:border-indigo-300 hover:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.btn-whatsapp {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 font-semibold text-white transition focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60;
+}
+
+.input {
+  @apply w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100;
+}
+
+.label {
+  @apply mb-1.5 block text-sm font-medium text-slate-700;
+}
+
+.card {
+  @apply rounded-2xl border border-slate-200 bg-white shadow-sm;
+}
+
+.card-hover {
+  @apply transition hover:-translate-y-0.5 hover:shadow-md;
+}
+
+.badge {
+  @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold;
+}
+
+.section-title {
+  @apply text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl;
+}
+
+.gradient-text {
+  @apply bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent;
+}

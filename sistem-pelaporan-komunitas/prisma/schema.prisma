@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  MASYARAKAT
+  PETUGAS
+  ADMIN
+}
+
+enum ReportStatus {
+  MENUNGGU_VERIFIKASI
+  VERIFIKASI_DITOLAK
+  DIPROSES
+  DITINDAKLANJUTI
+  SELESAI
+}
+
+enum ReportPriority {
+  RENDAH
+  SEDANG
+  TINGGI
+  URGENT
+}
+
+enum RegionLevel {
+  KECAMATAN
+  KELURAHAN
+  DESA
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(MASYARAKAT)
+  phone     String?
+  nik       String?  @unique
+  address   String?  @db.Text
+  lat       Float?
+  lng       Float?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reports         Report[]      @relation("Reporter")
+  verifiedReports Report[]      @relation("Verifier")
+  assignedReports Report[]      @relation("Officer")
+  followUps       FollowUp[]
+  notifications   Notification[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?  @db.Text
+  icon        String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  reports Report[]
+}
+
+model Region {
+  id        String      @id @default(cuid())
+  name      String
+  level     RegionLevel @default(KELURAHAN)
+  province  String
+  city      String
+  district  String?
+  lat       Float
+  lng       Float
+  createdAt DateTime    @default(now())
+
+  reports Report[]
+}
+
+model Report {
+  id               String       @id @default(cuid())
+  code             String       @unique
+  user             User         @relation("Reporter", fields: [userId], references: [id])
+  userId           String
+  category         Category     @relation(fields: [categoryId], references: [id])
+  categoryId       String
+  region           Region       @relation(fields: [regionId], references: [id])
+  regionId         String
+  title            String
+  description      String       @db.Text
+  address          String?      @db.Text
+  lat              Float
+  lng              Float
+  status           ReportStatus @default(MENUNGGU_VERIFIKASI)
+  priority         ReportPriority @default(SEDANG)
+  verificationNote String?      @db.Text
+  verifiedAt       DateTime?
+  verifiedBy       User?        @relation("Verifier", fields: [verifiedById], references: [id])
+  verifiedById     String?
+  assignedTo       User?        @relation("Officer", fields: [assignedToId], references: [id])
+  assignedToId     String?
+  assignedAt       DateTime?
+  closedAt         DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  media         ReportMedia[]
+  followUps     FollowUp[]
+  notifications Notification[]
+}
+
+model ReportMedia {
+  id        String   @id @default(cuid())
+  report    Report   @relation(fields: [reportId], references: [id])
+  reportId  String
+  url       String
+  type      String   @default("IMAGE")
+  caption   String?
+  createdAt DateTime @default(now())
+}
+
+model FollowUp {
+  id         String   @id @default(cuid())
+  report     Report   @relation(fields: [reportId], references: [id])
+  reportId   String
+  officer    User     @relation(fields: [officerId], references: [id])
+  officerId  String
+  note       String   @db.Text
+  photoUrl   String?
+  statusAfter ReportStatus
+  createdAt  DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  report    Report?  @relation(fields: [reportId], references: [id])
+  reportId  String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Counter {
+  id   Int    @id @default(autoincrement())
+  date String @unique
+  seq  Int    @default(0)
+}

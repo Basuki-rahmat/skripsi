@@ -1,0 +1,12 @@
+{
+  "name": "format-skripsi-binus",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "node src/generate.mjs"
+  },
+  "dependencies": {
+    "docx": "^9.5.1"
+  }
+}

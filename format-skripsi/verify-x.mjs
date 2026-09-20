@@ -1,0 +1,24 @@
+import { execSync } from "node:child_process";
+import { copyFileSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+const OUT = "C:/laragon/www/skripsi/format-skripsi/output/template-skripsi-binus.docx";
+const d = join(tmpdir(), "skr-x2");
+rmSync(d, { recursive: true, force: true });
+mkdirSync(d, { recursive: true });
+const zloc = join(d, "f.zip");
+copyFileSync(OUT, zloc);
+const pw = zloc.replace(/:/g, ":").split("\\").join("/");
+const d2 = d.split("\\").join("/");
+execSync(`powershell -NoProfile -Command "Expand-Archive -Path '${pw}' -DestinationPath '${d2}' -Force"`, { stdio: "pipe" });
+const s = readFileSync(join(d, "word", "settings.xml"), "utf8");
+console.log("SETTINGS (word/settings.xml):");
+console.log("  evenAndOddHeaders(true):", /evenAndOddHeaders w:val="true"/.test(s));
+console.log("  updateFields(true)     :", /updateFields w:val="true"/.test(s));
+const doc = readFileSync(join(d, "word", "document.xml"), "utf8");
+console.log("DOCUMENT (word/document.xml):");
+console.log("  pgNumType lowerRoman:", (doc.match(/w:fmt="lowerRoman"/g) || []).length);
+console.log("  pgNumType decimal   :", (doc.match(/w:fmt="decimal"/g) || []).length);
+console.log("  titlePg             :", (doc.match(/<w:titlePg\/>/g) || []).length);
+console.log("  oddPage             :", (doc.match(/w:type w:val="oddPage"/g) || []).length);
