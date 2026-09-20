@@ -197,6 +197,42 @@ server {
 
 SSL: `sudo certbot --nginx -d domainanda.com`
 
+## 🔐 Keamanan Produksi
+
+Sudah tertanam di kode:
+- **Rate limit login** — maks 5 percobaan/email/IP per 10 menit (`loginAction` + lapis kedua di `authorize` NextAuth, melindungi POST langsung ke callback API) + maks 5 register/IP per jam
+- **Cookie sesi `secure` otomatis** saat `NEXTAUTH_URL` ber-`https://`, `httpOnly`, `sameSite: lax`
+- **Token deep-link Telegram** ditandatangani HMAC-SHA256 (`NEXTAUTH_SECRET`) — tidak bisa dipalsukan
+- **Validasi upload** (tipe & ukuran) dan `proofUrl` hanya menerima `/uploads/` atau URL http(s)
+- Password di-hash bcrypt, validasi input Zod di semua action/API
+
+### Cron backup database (wajib di VPS)
+
+```bash
+sudo crontab -e
+# setiap hari 02.00, simpan 14 hari:
+0 2 * * * /var/www/skripsi/deploy/backup-db.sh >> /var/log/skripsi/backup.log 2>&1
+```
+
+Restore (menimpa DB — ada konfirmasi):
+```bash
+bash deploy/restore-db.sh /var/backups/skripsi/skripsi_db-<stamp>.sql.gz
+```
+
+> Idealnya backup juga disalin ke luar server (rclone ke S3/Google Drive) agar tahan bencana.
+
+### Rotasi secret (jika kebocoran)
+
+| Secret | Cara rotasi |
+| ------ | ----------- |
+| `NEXTAUTH_SECRET` | Ganti nilai → semua sesi user otomatis invalid (diminta login ulang). Token deep-link Telegram ikut invalid → user hubungkan ulang lewat tombol dashboard |
+| `TELEGRAM_BOT_TOKEN` | `/revoke` ke @BotFather → token baru → update `.env` → restart bot |
+| `GROQ_API_KEY` | Regenerate di console.groq.com/keys → update `.env` → restart bot |
+| `MIDTRANS_SERVER_KEY` | Rotasi via dashboard Midtrans → update `.env` → restart web |
+| Password DB | `ALTER USER` di MariaDB → update `DATABASE_URL` → restart web + bot |
+
+Semua rotasi hanya butuh edit `.env` + restart service — tidak ada perubahan kode.
+
 ### Checklist pasca-deploy
 
 - [ ] Landing 200, peta live tampil (atau dummy bila `pelaporan_db` kosong)
@@ -205,6 +241,8 @@ SSL: `sudo certbot --nginx -d domainanda.com`
 - [ ] Tombol sekali-klik dari dashboard produksi berfungsi
 - [ ] Transaksi Midtrans production → webhook masuk → status berubah
 - [ ] Upload bukti tersimpan & notif admin masuk
+- [ ] Cron backup aktif (`deploy/backup-db.sh`) & teruji restore
+- [ ] Password admin seed sudah diganti
 
 ## 📂 Struktur Folder
 
@@ -228,6 +266,7 @@ SSL: `sudo certbot --nginx -d domainanda.com`
 │   │   └── dashboard/
 │   ├── lib/
 │   │   ├── telegram-link.ts # token HMAC deep-link sekali klik
+│   │   ├── rate-limit.ts    # rate limit login/register (anti brute force)
 │   │   ├── thesis-stages-template.ts  # 9 tahap baku (sumber unik)
 │   │   ├── env.ts           # appUrl(), formatIDR, link WA/TG
 │   │   ├── db.ts mariadb.ts auth.ts midtrans.ts

@@ -1,10 +1,12 @@
 "use server";
 
+import { headers } from "next/headers";
 import { signIn } from "@/lib/auth";
 import { AuthError } from "next-auth";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   name: z.string().min(3, "Nama minimal 3 karakter"),
@@ -12,10 +14,26 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password minimal 6 karakter"),
 });
 
+async function clientIp(): Promise<string> {
+  const h = await headers();
+  const fwd = h.get("x-forwarded-for");
+  return fwd?.split(",")[0]?.trim() || "unknown";
+}
+
 export async function registerAction(
   prevState: { error?: string } | undefined,
   formData: FormData
 ): Promise<{ error?: string }> {
+  // Rate limit: maks 5 pendaftaran per IP per jam (anti-spam akun).
+  const ip = await clientIp();
+  const rl = checkRateLimit(`register:${ip}`, 5, 60 * 60_000);
+  if (!rl.ok) {
+    console.warn(`[security] register rate-limited dari IP: ${ip}`);
+    return {
+      error: `Terlalu banyak pendaftaran. Coba lagi dalam ${Math.ceil(rl.retryAfterSec / 60)} menit.`,
+    };
+  }
+
   const parsed = registerSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),

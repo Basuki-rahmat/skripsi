@@ -1,8 +1,19 @@
+import { headers } from "next/headers";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { Role } from "@/generated/prisma/enums";
+
+// Cookie aman otomatis: secure=true ketika aplikasi berjalan di HTTPS.
+const useSecure = (process.env.NEXTAUTH_URL ?? "").startsWith("https://");
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: "lax" as const,
+  path: "/",
+  secure: useSecure,
+};
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 * 7 },
@@ -10,15 +21,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   cookies: {
     sessionToken: {
       name: "skripsi.session-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
+      options: cookieOptions,
     },
     callbackUrl: {
       name: "skripsi.callback-url",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
+      options: cookieOptions,
     },
     csrfToken: {
       name: "skripsi.csrf-token",
-      options: { httpOnly: true, sameSite: "lax", path: "/", secure: false },
+      options: { ...cookieOptions, httpOnly: true },
     },
   },
   providers: [
@@ -32,6 +43,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = credentials?.email as string | undefined;
         const password = credentials?.password as string | undefined;
         if (!email || !password) return null;
+
+        // Lapis kedua rate limit (per email, lintas IP) — melindungi
+        // POST langsung ke /api/auth/callback/credentials tanpa lewat UI.
+        const rl = checkRateLimit(`auth:${email.toLowerCase()}`, 10, 10 * 60_000);
+        if (!rl.ok) {
+          console.warn(`[security] authorize rate-limited untuk: ${email}`);
+          return null;
+        }
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) return null;
